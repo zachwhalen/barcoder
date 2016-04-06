@@ -1,0 +1,273 @@
+<html>
+<head>
+
+<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,600italic,700,700italic,400italic|Lora:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+
+<script   src="https://code.jquery.com/jquery-2.2.3.min.js"   integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="   crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" /></script>
+
+
+
+<style>
+body {
+    font-family:Lora;
+    font-size: 12pt;
+}
+h1,h2,h3 {
+	font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+	font-weight: 800;
+}
+
+header h1 {
+    font-size:12pt;
+    color: #fff;
+    background-color: #F39C12;
+    padding: 20px;
+}
+article {
+    width: 95%;
+    margin:auto;
+    margin-top:10px;
+}
+.thumbnail {
+    height: 20px;
+    margin: 0;
+}
+
+#imageCanvas {
+	/*width: 500px;
+	height: 400px;*/
+	/*height: 120px;
+	/*width: 100px;
+	height: 60px;*/
+	background-color: #eee;
+	width: 100%;
+	/*width: 800px;*/
+	height: 300px;
+}
+
+footer {
+	margin-bottom: 200px;
+	text-align: center;
+	font-style: italic;
+	margin-top: 2em;
+}
+
+form {
+
+	background-color: #eee;
+	padding: 1em;
+	font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+}
+
+input[type=text]{
+	border: none;
+	padding: .2em;
+}
+
+</style>
+</head>
+<body>
+<header>
+    
+</header>
+<article class="container">
+<div class="row">
+
+	<h1>Movie Barcode Generator</h1>
+
+	<p>Movie barcodes are <a href="http://moviebarcode.tumblr.com">cool</a>. There are lots of ways to make them, but many of those methods involve downloading software or <a href="http://www.zachwhalen.net/posts/82/">working with command line tools</a>. There should be an easier way.</p>
+
+	<p>This page is my attempt at a JavaScript solution which will take however many images you want and give you a barcode-style PNG with them all smooshed together.</p>
+
+	<hr class="short" />
+
+	<h2>Step 0.</h2>
+
+	<p>First, you'll need a bunch of images; this tool can't help you gather or extract images or extract frames from a video file. To get those, I recommend using <a href="http://www.squared5.com/">MPEG StreamClip</a> to create however-many thousand images you want.</p>
+
+	<p>In MPEG StreamClip, open the movie file (MOV works best), then go to "File->Export to Other Formats...". Select "Image Sequence" for the Format, and then in "Options," set the image format you want (PNG) and the number of frames to extract per second (1 is usally good).
+
+	<h2>Step 1.</h2>
+	<p>Select your barcode's target size (in pixels):</p>
+	<form id="settings">
+	<label for="width">Width: </label>
+	<select type="select" name="width" id="width" label="width">
+	<option>500</option>
+	<option>600</option>
+	<option>800</option>
+	<option>1000</option>
+	<option selected="selected">2000</option>
+	<option>3000</option>
+	<option>5000</option>
+	<option>8000</option>
+	<option>10000</option>
+	<option>20000</option>
+	</select>
+
+	<label for="height">Height: </label>
+		<select type="select" name="height" id="height" label="height">
+	<option>200</option>
+	<option>300</option>
+	<option>500</option>
+	<option>800</option>
+	<option selected="selected">1200</option>
+	<option>1800</option>
+	<option>2400</option>
+	<option>3000</option>
+	<option>5000</option>
+	</select>
+	 &nbsp;&nbsp;&nbsp;
+	
+	 <img id="ratiopreview" src="barcodesmaller.png" alt="Barcode size previewer"/>
+
+	</form>
+	<p><strong>Please Note:</strong> If your <em>width</em> in pixels is <em>smaller</em> thanthe total number of files that you upload in the next step, then the images will overlap with an alpha transparency effect. The resulting image will appear somewhat faded or blurry.</p>
+	<p>Also, note that these values will change the size of the image you download, but the preview below will look the same.<p>
+
+	<h2>Step 2.</h2>
+	<p>Select your files. Browse to the folder where they're located and use Ctrl-A (or Cmd-A) to selet all, your shift-click to select large groups.</p>
+	<form>
+    <label for="files">Select multiple image files:</label>
+    <input id="files" type="file" multiple="multiple" />
+    </form>
+    <h2>Step 3.</h2>
+    <p>The images should start loading one at a time. This may take a while, depending on how many you're trying to load and how big they are.</p>
+
+    <p>Once it's all loaded, right click the resulting image, select "Save Image As...", and save it wherever you want!</p>
+    <hr />
+    <h1>Preview</h1>
+
+    <!-- <output id="result" /> -->
+    <canvas id="imageCanvas"></canvas>
+
+
+</div>
+</article>
+<footer class="container">
+<div class="row">
+
+<p>This tool was assembled (quickly and poorly) by Zach Whalen. If you have questions, problems, or concerns, feel free to get in touch at <a href="http://www.twitter.com/zachwhalen">@zachwhalen</a>.</p>
+<p>Feel free to copy, modify, distribute or steal.</p>
+</div>
+</footer>
+
+<script type="text/javascript">
+
+var settingsLoader = document.getElementById('width');
+	settingsLoader.addEventListener('change', handleWidthSetting, false);
+
+var settingsLoader = document.getElementById('height');
+	settingsLoader.addEventListener('change', handleHeightSetting, false);
+
+
+var imageLoader = document.getElementById('files');
+    imageLoader.addEventListener('change', handleFileSelect, false);
+var canvas = document.getElementById('imageCanvas');
+
+offset = 0;
+
+canvas.width=2000;
+canvas.height=1200;
+
+function handleWidthSetting(){
+	//console.log(event.target.value);
+	canvas.width=event.target.value;
+
+	var ht = document.getElementById('height').value;
+
+	var rat = event.target.value / ht;
+
+	console.log(rat);
+
+	$("#ratiopreview").width( 40 * rat );
+	$("#ratiopreview").height(40);
+
+	var hc = document.getElementById('imageCanvas').value;
+
+	$("#imageCanvas").height( hc * rat );
+
+}
+
+function handleHeightSetting(){
+	//console.log(event.target.value);
+	canvas.width=event.target.value;
+	//	$("#ratiopreview").height( event.target.value / 10);
+
+	var wd = document.getElementById('width').value;
+	var rat = wd / event.target.value;
+
+	$("#ratiopreview").width( 40 * rat );
+	$("#ratiopreview").height(40);
+
+	var hc = document.getElementById('imageCanvas').value;
+
+		$("#imageCanvas").height( hc * rat );
+
+
+}
+
+
+//var imgs = new Array();
+
+function handleFileSelect() {
+    //Check File API support
+    if (window.File && window.FileList && window.FileReader) {
+
+        var files = event.target.files; //FileList object
+        var output = document.getElementById("result");
+
+        var slice = canvas.width / files.length;
+
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+
+           // console.log(files[i]);
+            //Only pics
+            if (!file.type.match('image')) continue;
+
+            var picReader = new FileReader();
+            picReader.addEventListener("load", function (event) {
+
+            	var img = new Image();
+         		var ctx = canvas.getContext('2d');
+
+            	img.onload = function(){
+
+
+            		//console.log(img);
+         //    		canvas.width += 200;
+         //    		var centerShift_x = ( canvas.width - img.width * .6 ) / 2;
+ 			    	// var centerShift_y = ( canvas.height - img.height * .6 ) / 2;
+         //    		//canvas.width = img.width;
+         //    		//canvas.height = img.height;
+            		
+             		console.log(offset);
+
+             		ctx.drawImage(img,0,0,img.width,img.height,offset,0,slice,canvas.height);
+
+            		offset = offset + slice;
+            	}
+            	img.src = event.target.result;
+            	imgs[i] = img.src;
+                // var picFile = event.target;
+                // var div = document.createElement("div");
+                // div.innerHTML = "<img class='thumbnail' src='" + picFile.result + "'" + "title='" + picFile.name + "'/>";
+                // output.insertBefore(div, null);
+
+            });
+            //Read the image
+            picReader.readAsDataURL(file);
+        }
+    } else {
+        console.log("Your browser does not support File API");
+    }
+}
+
+document.getElementById('files').addEventListener('change', handleFileSelect, false);
+
+</script>
+</body>
+</html>
