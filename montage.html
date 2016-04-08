@@ -43,9 +43,9 @@ article {
 	/*width: 100px;
 	height: 60px;*/
 	background-color: #eee;
-	width: 100%;
-	/*width: 800px;*/
-	height: 300px;
+	/*width: 100%;
+	width: 800px;
+	height: 300px;*/
 }
 
 footer {
@@ -76,11 +76,11 @@ input[type=text]{
 <article class="container">
 <div class="row">
 
-	<h1>Movie Barcode Generator</h1>
+	<h1>Image Montage Generator</h1>
 
-	<p>Movie barcodes are <a href="http://moviebarcode.tumblr.com">cool</a>. There are lots of ways to make them, but many of those methods involve downloading software or <a href="http://www.zachwhalen.net/posts/82/">working with command line tools</a>. There should be an easier way.</p>
+	<p>Montage or mosaic images are <a href="http://moviebarcode.tumblr.com">cool</a>. There are lots of ways to make them, but many of those methods involve downloading software or working with command line tools. There should be an easier way.</p>
 
-	<p>This page is my attempt at a JavaScript solution which will take however many images you want and give you a barcode-style PNG with them all smooshed together.</p>
+	<p>This page is my attempt at a JavaScript solution which will take however many images you want and give you a montage-style PNG with them all arrayed in a grid you specify.</p>
 
 	<hr class="short" />
 
@@ -91,55 +91,58 @@ input[type=text]{
 	<p>In MPEG StreamClip, open the movie file (MOV works best), then go to "File->Export to Other Formats...". Select "Image Sequence" for the Format, and then in "Options," set the image format you want (PNG) and the number of frames to extract per second (1 is usally good).
 
 	<h2>Step 1.</h2>
-	<p>Select your barcode's target size (in pixels):</p>
+	<p>Select the dimensions (in pixels) for each image within the montage:</p>
 	<form id="settings">
 	<label for="width">Width: </label>
 	<select type="select" name="width" id="width" label="width">
-	<option>500</option>
-	<option>600</option>
-	<option>800</option>
-	<option>1000</option>
-	<option selected="selected">2000</option>
-	<option>3000</option>
-	<option>5000</option>
-	<option>8000</option>
-	<option>10000</option>
-	<option>20000</option>
+	<option>4</option>
+	<option>5</option>
+	<option>8</option>
+	<option>10</option>
+	<option>15</option>
+	<option selected="selected">20</option>
+	<option>30</option>
+	<option>50</option>
+	<option>80</option>
+
 	</select>
 
 	<label for="height">Height: </label>
 		<select type="select" name="height" id="height" label="height">
-	<option>200</option>
-	<option>300</option>
-	<option>500</option>
-	<option>800</option>
-	<option selected="selected">1200</option>
-	<option>1800</option>
-	<option>2400</option>
-	<option>3000</option>
-	<option>5000</option>
+<option>2</option>
+<option>3</option>
+<option>5</option>
+<option>6</option>
+<option>8</option>
+<option>10</option>
+<option>12</option>
+<option selected="selected">16</option>
+<option>20</option>
+<option>35</option>
+<option>60</option>
+
 	</select>
 	 &nbsp;&nbsp;&nbsp;
-	
-	 <img id="ratiopreview" src="barcodesmaller.png" alt="Barcode size previewer"/>
+<label for="columns">Columns</label>	
+<input type="text" id="columns" size="4" value="15">
+
+
 
 	</form>
-	<p><strong>Please Note:</strong> If your <em>width</em> in pixels is <em>smaller</em> thanthe total number of files that you upload in the next step, then the images will overlap with an alpha transparency effect. The resulting image will appear somewhat faded or blurry.</p>
-	<p>Also, note that these values will change the size of the image you download, but the preview below will look the same.<p>
+	
 
 	<h2>Step 2.</h2>
-	<p>Select your files. Browse to the folder where they're located and use Ctrl-A (or Cmd-A) to selet all, your shift-click to select large groups.</p>
+	<p>Select your files. Browse to the folder where they're located and use Ctrl-A (or Cmd-A) to select all, your shift-click to select large groups.</p>
 	<form>
     <label for="files">Select multiple image files:</label>
     <input id="files" type="file" multiple="multiple" />
     </form>
     <h2>Step 3.</h2>
-    <p>The images should start loading one at a time. This may take a while, depending on how many you're trying to load and how big they are.</p>
+    <p>The images should start loading one at a time. This may take a while, depending on how many you're trying to load and how large they are.</p>
 
     <p>Once it's all loaded, right click the resulting image, select "Save Image As...", and save it wherever you want!</p>
     <hr />
     <h1>Preview</h1> 
-<p><a id="downloadLink">Download...</a></p>
     <!-- <output id="result" /> -->
     <canvas id="imageCanvas"></canvas>
 
@@ -156,58 +159,45 @@ input[type=text]{
 
 <script type="text/javascript">
 
-var settingsLoader = document.getElementById('width');
-	settingsLoader.addEventListener('change', handleWidthSetting, false);
+// var widthLoader = document.getElementById('width');
+// 	heightLoader.addEventListener('change', handleWidthSetting, false);
 
-var settingsLoader = document.getElementById('height');
-	settingsLoader.addEventListener('change', handleHeightSetting, false);
+// var settingsLoader = document.getElementById('height');
+// 	settingsLoader.addEventListener('change', handleHeightSetting, false);
 
 
 var imageLoader = document.getElementById('files');
     imageLoader.addEventListener('change', handleFileSelect, false);
 var canvas = document.getElementById('imageCanvas');
 
-offset = 0;
+picWidth = 20;
+picHeight = 16;
 
-canvas.width=2000;
-canvas.height=1200;
+var xOffset = 0;
+var yOffset = 0;
 
-function handleWidthSetting(){
-	//console.log(event.target.value);
-	canvas.width=event.target.value;
-
-	var ht = document.getElementById('height').value;
-
-	var rat = event.target.value / ht;
-
-	console.log(rat);
-
-	$("#ratiopreview").width( 40 * rat );
-	$("#ratiopreview").height(40);
-
-	var hc = document.getElementById('imageCanvas').value;
-
-	$("#imageCanvas").height( hc * rat );
-
-}
-
-function handleHeightSetting(){
-	//console.log(event.target.value);
-	canvas.width=event.target.value;
-	//	$("#ratiopreview").height( event.target.value / 10);
-
-	var wd = document.getElementById('width').value;
-	var rat = wd / event.target.value;
-
-	$("#ratiopreview").width( 40 * rat );
-	$("#ratiopreview").height(40);
-
-	var hc = document.getElementById('imageCanvas').value;
-
-		$("#imageCanvas").height( hc * rat );
+var columns = 15;
 
 
-}
+//canvas.width=2000;
+//canvas.height=1200;
+
+$("#columns").change( function(){
+	columns = this.value;
+	console.log("Changed column number to " + columns);
+});
+
+$("#width").change( function(){
+	picWidth = this.value;
+	console.log("Changed picture width to " + picWidth);
+});
+
+$("#height").change( function(){
+	picHeight = this.value;
+	console.log("Changed picture height to " + picHeight);
+});
+
+
 
 
 //var imgs = new Array();
@@ -219,7 +209,12 @@ function handleFileSelect() {
         var files = event.target.files; //FileList object
         var output = document.getElementById("result");
 
-        var slice = canvas.width / files.length;
+        canvas.width = columns * picWidth;
+        canvas.height = picHeight * (Math.ceil(files.length / columns));
+
+        $("#imageCanvas").css({"height":canvas.height,"width":canvas.width});
+
+        console.log("The canvas should be " + canvas.width + " x " + canvas.height);
 
         for (var i = 0; i < files.length; i++) {
             var file = files[i];
@@ -244,11 +239,16 @@ function handleFileSelect() {
          //    		//canvas.width = img.width;
          //    		//canvas.height = img.height;
             		
-             		console.log(offset);
 
-             		ctx.drawImage(img,0,0,img.width,img.height,offset,0,slice,canvas.height);
+             		ctx.drawImage(img,0,0,img.width,img.height,xOffset,yOffset,picWidth,picHeight);
 
-            		offset = offset + slice;
+            		xOffset = Number(xOffset) + Number(picWidth);
+            		if (xOffset >= canvas.width){
+
+            			console.log("new row. xOffset = " + xOffset);
+            			yOffset = Number(yOffset) + Number(picHeight);
+            			xOffset = 0;
+            		}
             	}
             	img.src = event.target.result;
             	//imgs[i] = img.src;
@@ -261,10 +261,6 @@ function handleFileSelect() {
             //Read the image
             picReader.readAsDataURL(file);
 
-            
-var dataUrl = canvas.toDataURL("image/png");
-
-$("#downloadLink").attr("href",dataUrl);
         }
     } else {
         console.log("Your browser does not support File API");
